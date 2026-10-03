@@ -1,0 +1,909 @@
+--// BEST AND ONLY ANTI TRAP
+--// EXTREME FAST + RGB GAMER UI V2.3 FINAL
+--// By Alejandrillo
+--// LocalScript
+--// StarterPlayer > StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+--==================================================
+-- CONFIGURACIÓN
+--==================================================
+
+local CHECK_TIME = 0.025
+local MOVEMENT_THRESHOLD = 0.015
+
+local EQUIP_SPEED = 0.01
+
+local MIN_SPEED = 0.01
+local MAX_SPEED = 1.00
+
+local TRAP_NAME = "Trap"
+
+--==================================================
+-- FLY GEARS PERMITIDOS
+--==================================================
+
+local FLY_GEARS = {
+	["Santa's Sleigh"] = true,
+	["Witch's Broom"] = true,
+	["Cupid's Wings"] = true,
+	["Flying Carpet"] = true
+}
+
+--==================================================
+-- VARIABLES
+--==================================================
+
+local enabled = false
+local selectedToolName = nil
+
+local stuckTime = 0
+local lastPosition = nil
+local lastEquip = 0
+
+local minimized = false
+local locked = false
+
+local hideNames = false
+
+local trapEspEnabled = false
+local trapTracersEnabled = false
+local autoTrapEnabled = false
+
+local trapObjects = {}
+local trapBeams = {}
+
+local page = 1
+local PAGE_COUNT = 2
+
+--==================================================
+-- GUI PRINCIPAL
+--==================================================
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "AntiTrap"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.fromOffset(260,390)
+main.Position = UDim2.new(0,20,0.5,-195)
+main.BackgroundColor3 = Color3.fromRGB(18,18,22)
+main.BorderSizePixel = 0
+main.Active = true
+main.Parent = gui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0,12)
+mainCorner.Parent = main
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 2.5
+stroke.Parent = main
+
+--==================================================
+-- TÍTULO
+--==================================================
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,-85,0,35)
+title.Position = UDim2.fromOffset(5,5)
+title.BackgroundTransparency = 1
+title.Text = "BEST AND ONLY ANTI TRAP"
+title.TextColor3 = Color3.fromRGB(240,240,255)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Active = true
+title.Parent = main
+
+local titleStroke = Instance.new("UIStroke")
+titleStroke.Thickness = 1.2
+titleStroke.Transparency = 0.35
+titleStroke.Parent = title
+
+--==================================================
+-- MINIMIZAR
+--==================================================
+
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Size = UDim2.fromOffset(30,30)
+minimizeButton.Position = UDim2.new(1,-70,0,7)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(30,30,38)
+minimizeButton.Text = "−"
+minimizeButton.TextColor3 = Color3.fromRGB(240,240,255)
+minimizeButton.TextScaled = true
+minimizeButton.Font = Enum.Font.GothamBold
+minimizeButton.Parent = main
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0,7)
+minCorner.Parent = minimizeButton
+
+--==================================================
+-- LOCK
+--==================================================
+
+local lockButton = Instance.new("TextButton")
+lockButton.Size = UDim2.fromOffset(30,30)
+lockButton.Position = UDim2.new(1,-35,0,7)
+lockButton.BackgroundColor3 = Color3.fromRGB(30,30,38)
+lockButton.Text = "🔓"
+lockButton.TextColor3 = Color3.fromRGB(240,240,255)
+lockButton.TextScaled = true
+lockButton.Font = Enum.Font.GothamBold
+lockButton.Parent = main
+
+local lockCorner = Instance.new("UICorner")
+lockCorner.CornerRadius = UDim.new(0,7)
+lockCorner.Parent = lockButton
+
+--==================================================
+-- PÁGINAS
+--==================================================
+
+local page1 = Instance.new("Frame")
+page1.Name = "Page1"
+page1.Size = UDim2.new(1,-10,0,285)
+page1.Position = UDim2.fromOffset(5,45)
+page1.BackgroundTransparency = 1
+page1.Parent = main
+
+local page2 = Instance.new("Frame")
+page2.Name = "Page2"
+page2.Size = UDim2.new(1,-10,0,285)
+page2.Position = UDim2.fromOffset(5,45)
+page2.BackgroundTransparency = 1
+page2.Visible = false
+page2.Parent = main
+
+--==================================================
+-- PÁGINA 1 - FLY GEARS
+--==================================================
+
+local objectLabel = Instance.new("TextLabel")
+objectLabel.Size = UDim2.new(1,-10,0,24)
+objectLabel.Position = UDim2.fromOffset(5,0)
+objectLabel.BackgroundTransparency = 1
+objectLabel.Text = "FLY GEARS"
+objectLabel.TextColor3 = Color3.fromRGB(150,180,255)
+objectLabel.TextScaled = true
+objectLabel.Font = Enum.Font.GothamBold
+objectLabel.Parent = page1
+
+local selectedLabel = Instance.new("TextLabel")
+selectedLabel.Size = UDim2.new(1,-10,0,20)
+selectedLabel.Position = UDim2.fromOffset(5,24)
+selectedLabel.BackgroundTransparency = 1
+selectedLabel.Text = "Ninguno"
+selectedLabel.TextColor3 = Color3.fromRGB(170,170,185)
+selectedLabel.TextScaled = true
+selectedLabel.Font = Enum.Font.Gotham
+selectedLabel.Parent = page1
+
+local list = Instance.new("ScrollingFrame")
+list.Size = UDim2.new(1,-10,0,88)
+list.Position = UDim2.fromOffset(5,47)
+list.BackgroundColor3 = Color3.fromRGB(22,22,28)
+list.BorderSizePixel = 0
+list.ScrollBarThickness = 4
+list.CanvasSize = UDim2.new(0,0,0,0)
+list.Parent = page1
+
+local listCorner = Instance.new("UICorner")
+listCorner.CornerRadius = UDim.new(0,7)
+listCorner.Parent = list
+
+local listStroke = Instance.new("UIStroke")
+listStroke.Thickness = 1.2
+listStroke.Transparency = 0.3
+listStroke.Parent = list
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0,3)
+layout.Parent = list
+
+--==================================================
+-- SPEED
+--==================================================
+
+local speedTitle = Instance.new("TextLabel")
+speedTitle.Size = UDim2.new(1,-10,0,20)
+speedTitle.Position = UDim2.fromOffset(5,140)
+speedTitle.BackgroundTransparency = 1
+speedTitle.Text = "EQUIP / UNEQUIP SPEED"
+speedTitle.TextColor3 = Color3.fromRGB(150,180,255)
+speedTitle.TextScaled = true
+speedTitle.Font = Enum.Font.GothamBold
+speedTitle.Parent = page1
+
+local speedValue = Instance.new("TextLabel")
+speedValue.Size = UDim2.new(1,-10,0,20)
+speedValue.Position = UDim2.fromOffset(5,160)
+speedValue.BackgroundTransparency = 1
+speedValue.Text = "0.01 s"
+speedValue.TextColor3 = Color3.fromRGB(220,220,235)
+speedValue.TextScaled = true
+speedValue.Font = Enum.Font.GothamBold
+speedValue.Parent = page1
+
+local sliderBackground = Instance.new("Frame")
+sliderBackground.Size = UDim2.new(1,-30,0,8)
+sliderBackground.Position = UDim2.fromOffset(15,188)
+sliderBackground.BackgroundColor3 = Color3.fromRGB(40,40,48)
+sliderBackground.BorderSizePixel = 0
+sliderBackground.Parent = page1
+
+local sliderCorner = Instance.new("UICorner")
+sliderCorner.CornerRadius = UDim.new(1,0)
+sliderCorner.Parent = sliderBackground
+
+local sliderFill = Instance.new("Frame")
+sliderFill.Size = UDim2.new(0,0,1,0)
+sliderFill.BackgroundColor3 = Color3.fromRGB(90,100,255)
+sliderFill.BorderSizePixel = 0
+sliderFill.Parent = sliderBackground
+
+local sliderFillCorner = Instance.new("UICorner")
+sliderFillCorner.CornerRadius = UDim.new(1,0)
+sliderFillCorner.Parent = sliderFill
+
+local sliderButton = Instance.new("TextButton")
+sliderButton.Size = UDim2.fromOffset(18,18)
+sliderButton.AnchorPoint = Vector2.new(0.5,0.5)
+sliderButton.Position = UDim2.new(0,0,0.5,0)
+sliderButton.BackgroundColor3 = Color3.fromRGB(235,235,255)
+sliderButton.Text = ""
+sliderButton.AutoButtonColor = false
+sliderButton.Parent = sliderBackground
+
+local sliderButtonCorner = Instance.new("UICorner")
+sliderButtonCorner.CornerRadius = UDim.new(1,0)
+sliderButtonCorner.Parent = sliderButton
+
+local sliderButtonStroke = Instance.new("UIStroke")
+sliderButtonStroke.Thickness = 2
+sliderButtonStroke.Parent = sliderButton
+
+local speedBox = Instance.new("TextBox")
+speedBox.Size = UDim2.new(1,-30,0,30)
+speedBox.Position = UDim2.fromOffset(15,205)
+speedBox.BackgroundColor3 = Color3.fromRGB(28,28,36)
+speedBox.BorderSizePixel = 0
+speedBox.Text = "0.01"
+speedBox.PlaceholderText = "Escribe velocidad..."
+speedBox.TextColor3 = Color3.fromRGB(235,235,245)
+speedBox.PlaceholderColor3 = Color3.fromRGB(120,120,135)
+speedBox.TextScaled = true
+speedBox.Font = Enum.Font.Gotham
+speedBox.ClearTextOnFocus = false
+speedBox.Parent = page1
+
+local speedBoxCorner = Instance.new("UICorner")
+speedBoxCorner.CornerRadius = UDim.new(0,7)
+speedBoxCorner.Parent = speedBox
+
+local speedBoxStroke = Instance.new("UIStroke")
+speedBoxStroke.Thickness = 1.2
+speedBoxStroke.Parent = speedBox
+
+--==================================================
+-- ANTI TRAP TOGGLE
+--==================================================
+
+local toggle = Instance.new("TextButton")
+toggle.Size = UDim2.new(1,-20,0,35)
+toggle.Position = UDim2.fromOffset(10,242)
+toggle.BackgroundColor3 = Color3.fromRGB(28,28,35)
+toggle.Text = "ANTI TRAP: OFF"
+toggle.TextColor3 = Color3.fromRGB(235,235,245)
+toggle.TextScaled = true
+toggle.Font = Enum.Font.GothamBold
+toggle.Parent = page1
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0,7)
+toggleCorner.Parent = toggle
+
+local toggleStroke = Instance.new("UIStroke")
+toggleStroke.Thickness = 1.8
+toggleStroke.Parent = toggle
+
+--==================================================
+-- PÁGINA 2 - TRAPS
+--==================================================
+
+local trapsTitle = Instance.new("TextLabel")
+trapsTitle.Size = UDim2.new(1,-10,0,28)
+trapsTitle.Position = UDim2.fromOffset(5,0)
+trapsTitle.BackgroundTransparency = 1
+trapsTitle.Text = "TRAPS"
+trapsTitle.TextColor3 = Color3.fromRGB(150,180,255)
+trapsTitle.TextScaled = true
+trapsTitle.Font = Enum.Font.GothamBold
+trapsTitle.Parent = page2
+
+local function createTrapButton(text,pos)
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.new(1,-20,0,38)
+	button.Position = pos
+	button.BackgroundColor3 = Color3.fromRGB(28,28,35)
+	button.Text = text
+	button.TextColor3 = Color3.fromRGB(235,235,245)
+	button.TextScaled = true
+	button.Font = Enum.Font.GothamBold
+	button.AutoButtonColor = false
+	button.Parent = page2
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0,7)
+	corner.Parent = button
+
+	local s = Instance.new("UIStroke")
+	s.Thickness = 1.4
+	s.Transparency = 0.2
+	s.Parent = button
+
+	return button
+end
+
+local espButton = createTrapButton(
+	"ESP TRAPS: OFF",
+	UDim2.fromOffset(10,38)
+)
+
+local tracersButton = createTrapButton(
+	"TRAP TRACERS: OFF",
+	UDim2.fromOffset(10,82)
+)
+
+local autoTrapButton = createTrapButton(
+	"AUTOMATICALLY SET A TRAP: OFF",
+	UDim2.fromOffset(10,126)
+)
+
+local hideNamesButton = createTrapButton(
+	"HIDE NAMES: OFF",
+	UDim2.fromOffset(10,170)
+)
+
+local pageInfo = Instance.new("TextLabel")
+pageInfo.Size = UDim2.new(1,-20,0,45)
+pageInfo.Position = UDim2.fromOffset(10,218)
+pageInfo.BackgroundTransparency = 1
+pageInfo.Text = "ESP • TRACERS • AUTO TRAP\nHIDE NAMES"
+pageInfo.TextColor3 = Color3.fromRGB(110,110,125)
+pageInfo.TextScaled = true
+pageInfo.Font = Enum.Font.Gotham
+pageInfo.Parent = page2
+
+--==================================================
+-- NAVEGACIÓN
+--==================================================
+
+local pageIndicator = Instance.new("TextLabel")
+pageIndicator.Size = UDim2.fromOffset(50,20)
+pageIndicator.Position = UDim2.new(0.5,-25,1,-68)
+pageIndicator.BackgroundTransparency = 1
+pageIndicator.Text = "1 / 2"
+pageIndicator.TextColor3 = Color3.fromRGB(180,180,195)
+pageIndicator.TextScaled = true
+pageIndicator.Font = Enum.Font.GothamBold
+pageIndicator.Parent = main
+
+local upButton = Instance.new("TextButton")
+upButton.Size = UDim2.new(0.48,-10,0,30)
+upButton.Position = UDim2.fromOffset(10,1)
+upButton.AnchorPoint = Vector2.new(0,1)
+upButton.Position = UDim2.new(0,10,1,-8)
+upButton.BackgroundColor3 = Color3.fromRGB(28,28,35)
+upButton.Text = "⬆ ARRIBA"
+upButton.TextColor3 = Color3.fromRGB(235,235,245)
+upButton.TextScaled = true
+upButton.Font = Enum.Font.GothamBold
+upButton.Parent = main
+
+local upCorner = Instance.new("UICorner")
+upCorner.CornerRadius = UDim.new(0,7)
+upCorner.Parent = upButton
+
+local downButton = Instance.new("TextButton")
+downButton.Size = UDim2.new(0.48,-10,0,30)
+downButton.AnchorPoint = Vector2.new(1,1)
+downButton.Position = UDim2.new(1,-10,1,-8)
+downButton.BackgroundColor3 = Color3.fromRGB(28,28,35)
+downButton.Text = "⬇ ABAJO"
+downButton.TextColor3 = Color3.fromRGB(235,235,245)
+downButton.TextScaled = true
+downButton.Font = Enum.Font.GothamBold
+downButton.Parent = main
+
+local downCorner = Instance.new("UICorner")
+downCorner.CornerRadius = UDim.new(0,7)
+downCorner.Parent = downButton
+
+local byLabel = Instance.new("TextLabel")
+byLabel.Size = UDim2.fromOffset(260,20)
+byLabel.Position = UDim2.new(0,20,0.5,201)
+byLabel.BackgroundTransparency = 1
+byLabel.Text = "By Alejandrillo"
+byLabel.TextColor3 = Color3.fromRGB(170,170,185)
+byLabel.TextScaled = true
+byLabel.Font = Enum.Font.GothamBold
+byLabel.Parent = gui
+
+--==================================================
+-- CAMBIO DE PÁGINA
+--==================================================
+
+local function showPage(number)
+
+	page = math.clamp(number,1,PAGE_COUNT)
+
+	page1.Visible = page == 1
+	page2.Visible = page == 2
+
+	pageIndicator.Text =
+		tostring(page) .. " / " .. tostring(PAGE_COUNT)
+
+end
+
+upButton.MouseButton1Click:Connect(function()
+
+	if page > 1 then
+		showPage(page - 1)
+	end
+
+end)
+
+downButton.MouseButton1Click:Connect(function()
+
+	if page < PAGE_COUNT then
+		showPage(page + 1)
+	end
+
+end)
+
+showPage(1)
+
+--==================================================
+-- SET SPEED
+--==================================================
+
+local function setSpeed(value)
+
+	value = tonumber(value)
+
+	if not value then
+		return
+	end
+
+	value = math.clamp(
+		value,
+		MIN_SPEED,
+		MAX_SPEED
+	)
+
+	value = math.floor(
+		value * 100 + 0.5
+	) / 100
+
+	EQUIP_SPEED = value
+
+	speedValue.Text =
+		string.format(
+			"%.2f s",
+			EQUIP_SPEED
+		)
+
+	speedBox.Text =
+		string.format(
+			"%.2f",
+			EQUIP_SPEED
+		)
+
+	local percent =
+		(EQUIP_SPEED - MIN_SPEED) /
+		(MAX_SPEED - MIN_SPEED)
+
+	sliderFill.Size =
+		UDim2.new(
+			percent,
+			0,
+			1,
+			0
+		)
+
+	sliderButton.Position =
+		UDim2.new(
+			percent,
+			0,
+			0.5,
+			0
+		)
+
+end
+
+setSpeed(EQUIP_SPEED)
+
+--==================================================
+-- SLIDER
+--==================================================
+
+local sliderDragging = false
+
+local function updateSlider(input)
+
+	local x =
+		input.Position.X -
+		sliderBackground.AbsolutePosition.X
+
+	local percent =
+		math.clamp(
+			x / sliderBackground.AbsoluteSize.X,
+			0,
+			1
+		)
+
+	local value =
+		MIN_SPEED +
+		(
+			(MAX_SPEED - MIN_SPEED)
+			* percent
+		)
+
+	setSpeed(value)
+
+end
+
+sliderButton.InputBegan:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		sliderDragging = true
+
+	end
+
+end)
+
+sliderBackground.InputBegan:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		sliderDragging = true
+		updateSlider(input)
+
+	end
+
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+
+	if not sliderDragging then
+		return
+	end
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseMovement
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		updateSlider(input)
+
+	end
+
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		sliderDragging = false
+
+	end
+
+end)
+
+speedBox.FocusLost:Connect(function()
+
+	local value =
+		tonumber(speedBox.Text)
+
+	if value then
+		setSpeed(value)
+	else
+		speedBox.Text =
+			string.format(
+				"%.2f",
+				EQUIP_SPEED
+			)
+	end
+
+end)
+
+--==================================================
+-- DRAG DEL MENÚ
+--==================================================
+
+local dragging = false
+local dragStart
+local startPos
+
+title.InputBegan:Connect(function(input)
+
+	if locked then
+		return
+	end
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		dragging = true
+		dragStart = input.Position
+		startPos = main.Position
+
+	end
+
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+
+	if not dragging then
+		return
+	end
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseMovement
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		local delta =
+			input.Position - dragStart
+
+		main.Position =
+			UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset + delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset + delta.Y
+			)
+
+	end
+
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		dragging = false
+
+	end
+
+end)
+
+--==================================================
+-- LOCK DEL MENÚ
+--==================================================
+
+lockButton.MouseButton1Click:Connect(function()
+
+	locked = not locked
+
+	if locked then
+		lockButton.Text = "🔒"
+	else
+		lockButton.Text = "🔓"
+	end
+
+end)
+
+--==================================================
+-- MINIMIZAR
+--==================================================
+
+local normalSize =
+	UDim2.fromOffset(260,390)
+
+local minimizedSize =
+	UDim2.fromOffset(260,50)
+
+minimizeButton.MouseButton1Click:Connect(function()
+
+	minimized = not minimized
+
+	if minimized then
+
+		main.Size = minimizedSize
+
+		page1.Visible = false
+		page2.Visible = false
+
+		pageIndicator.Visible = false
+		upButton.Visible = false
+		downButton.Visible = false
+
+		minimizeButton.Text = "+"
+
+	else
+
+		main.Size = normalSize
+
+		pageIndicator.Visible = true
+		upButton.Visible = true
+		downButton.Visible = true
+
+		minimizeButton.Text = "−"
+
+		showPage(page)
+
+	end
+
+end)
+
+--==================================================
+-- BUSCAR TOOL
+--==================================================
+
+local function findTool(name)
+
+	if not name then
+		return nil
+	end
+
+	local backpack =
+		player:FindFirstChildOfClass("Backpack")
+
+	if backpack then
+
+		local tool =
+			backpack:FindFirstChild(name)
+
+		if tool and tool:IsA("Tool") then
+			return tool
+		end
+
+	end
+
+	local character =
+		player.Character
+
+	if character then
+
+		local tool =
+			character:FindFirstChild(name)
+
+		if tool and tool:IsA("Tool") then
+			return tool
+		end
+
+	end
+
+	return nil
+
+end
+
+--==================================================
+-- EQUIP / ACTIVATE / UNEQUIP
+--==================================================
+-- IMPORTANTE:
+-- ESTA ES LA LÓGICA DEL V2.1
+-- EQUIP -> ACTIVATE INMEDIATO -> WAIT -> UNEQUIP
+
+local function equipAndInstantUnequip()
+
+	if not enabled then
+		return
+	end
+
+	if not selectedToolName then
+		return
+	end
+
+	local now =
+		os.clock()
+
+	if now - lastEquip < EQUIP_SPEED then
+		return
+	end
+
+	local character =
+		player.Character
+
+	if not character then
+		return
+	end
+
+	local humanoid =
+		character:FindFirstChildOfClass(
+			"Humanoid"
+		)
+
+	if not humanoid then
+		return
+	end
+
+	local tool =
+		findTool(
+			selectedToolName
+		)
+
+	if not tool then
+		return
+	end
+
+	lastEquip = now
+
+	pcall(function()
+
+		humanoid:EquipTool(
+			tool
+		)
+
+	end)
+
+	task.spawn(function()
+
+		-- ACTIVAR INMEDIATAMENTE
+		pcall(function()
+
+			tool:Activate()
+
+		end)
+
+		-- MISMO TIMING DEL V2.1
+		task.wait(
+			EQUIP_SPEED
+		)
+
+		pcall(function()
+
+			humanoid:UnequipTools()
+
+		end)
+
+	end)
+
+end
+
+--==================================================
+-- OBTENER FLY GEARS
+--==================================================
+
+local function getTools()
+
+	local tools = {}
+
+	local backpack =
+		player:FindFirstChildOfClass(
+			"Backpack"
+		)
+
+	if backpack then
+
+		for _,obj in ipairs(
+			backpack:GetChildren()
+		) do
+
+			if obj:IsA("Tool")
+				and FLY_GEARS[obj.Name] the
